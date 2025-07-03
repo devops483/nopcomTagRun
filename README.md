@@ -1,140 +1,179 @@
 
-# 🐳 From Chaos to Control: My Journey with Docker, SQL Server, and Secure Development
+# Deploying nopCommerce Using Docker Compose on Linux: Step-by-Step with Data Persistence and Portainer
 
-Deploying a full-stack application with Docker sounds straightforward in theory — spin up containers, connect the database, and you're off to the races. But in reality, it’s a series of small battles. Here's my story of how I went from frustration to a fully functioning, secure, and persistent environment using Docker, SQL Server, volumes, and Ngrok.
-
----
-
-## 🏗️ Setting the Stage: Why Docker?
-
-I was working on a **nopCommerce** project and decided to containerize the environment to make development and deployment easier. Docker Compose felt like the right tool to orchestrate services — a web app and a SQL Server backend.
-
-The goal:
-- Run SQL Server in a container
-- Connect it with nopCommerce
-- Ensure data is **persistent**
-- Enable **HTTPS** access via **Ngrok**
-
-Simple enough? Not quite.
+**By Z | Published: July 3, 2025**
 
 ---
 
-## 😫 The First Hurdle: Ephemeral Databases
+## 🧭 Overview
 
-I started with a basic `docker-compose.yml` setup:
+In this guide, I walk through how I deployed **nopCommerce** using **Docker Compose** on a **Linux environment**, solved critical **data persistence** issues, and integrated **Portainer** for container management — without Docker Desktop.
+
+---
+
+## 🎯 Project Goal
+
+- Use **Docker Compose** to set up nopCommerce and SQL Server containers
+- Ensure **user data is retained** after container restarts or system reboots
+- Bypass the nopCommerce installation screen on every restart
+- Manage containers with a UI using **Portainer** (Docker Desktop isn’t supported on Linux)
+
+---
+
+## 🧱 Step-by-Step Setup
+
+### ✅ Step 1: Initial Docker Compose File
 
 ```yaml
+version: '3.4'
+
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-preview-ubuntu-22.04
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
     environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "yourStrong()Password"
-      MSSQL_PID: "Evaluation"
     ports:
       - "1433:1433"
+
+  nopcommerce:
+    image: nopcommerceteam/nopcommerce:latest
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
 ```
-
-Everything ran fine — until I stopped the container. When I restarted it, **all the data was gone**. Every table I created, every record I inserted... wiped out. That's when I learned about Docker's default **ephemeral storage**.
-
----
-
-## 💾 Lesson Learned: Persisting SQL Server Data
-
-To prevent data loss, I created a **named volume** and mounted it to SQL Server’s data directory:
-
-```yaml
-volumes:
-  - sql_data:/var/opt/mssql
-```
-
-Then I added a `volumes` block at the end of the file:
-
-```yaml
-volumes:
-  sql_data:
-```
-
-This change ensured that even if the container was stopped or recreated, the database files remained intact. Finally, persistent data. ✅
-
----
-
-## 🔗 Integrating nopCommerce: More Than Just a Connection String
-
-Connecting nopCommerce to SQL Server wasn't plug-and-play. I had to:
-- Match the **host and port** used in Docker
-- Ensure the database was reachable using the container name (`sqlserver`)
-- Adjust `appsettings.json` to use the correct connection string
-- Wait for SQL Server to fully boot up before nopCommerce tried to connect
-
-After some tweaking and container restarts, the application and database were talking.
-
----
-
-## 🔐 Next Challenge: HTTPS in Development
-
-Most modern APIs and third-party services demand **HTTPS**, even in development. Exposing my local site over HTTPS wasn't as easy as enabling a flag — that’s where **Ngrok** came in.
-
-Ngrok allows secure tunnels to your local environment. I installed Ngrok and started a tunnel like this:
 
 ```bash
-ngrok http 5000
+docker-compose up
 ```
 
-Now I had a public HTTPS URL like `https://randomsubdomain.ngrok.io`, which forwarded to `localhost:5000`. This solved several problems:
-- Secure frontend/backend communication
-- Easy webhook testing from third-party services
-- SSL termination handled externally
+![Installation Screen](sandbox:/mnt/data/Installation.jpg)
+*Initial Installation Screen: Configure store and database*
 
 ---
 
-## 🎯 What I Learned
+### ⚠️ Step 2: First Critical Issue – Data Lost on Restart
 
-This journey taught me far more than Docker commands:
-- Persistence matters. Always configure volumes early.
-- Services might depend on startup order. Use `depends_on` or wait-for-it scripts.
-- HTTPS in development is essential for many real-world scenarios.
-- Containerization doesn't eliminate problems — it just makes them easier to isolate and solve.
+After adding test users, I restarted the containers.
+
+```bash
+docker-compose down
+docker-compose up
+```
+
+❌ **Issue**: nopCommerce showed the installation page again. All data lost.
 
 ---
 
-## ✅ Final Setup Overview
+### 🔍 Step 3: Root Cause – No Volume = No Persistence
+
+By default, containers don't retain changes unless volumes are used.
+
+---
+
+### 💾 Step 4: Solution – Add Docker Volumes
 
 ```yaml
-version: '3.8'
+version: '3.4'
 
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-preview-ubuntu-22.04
-    container_name: sqlpreview
-    hostname: sqlpreview
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
     environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "yourStrong()Password"
-      MSSQL_PID: "Evaluation"
     ports:
       - "1433:1433"
     volumes:
-      - sql_data:/var/opt/mssql
+      - db_data:/var/opt/mssql
+
+  nopcommerce:
+    image: nopcommerceteam/nopcommerce:latest
+    depends_on:
+      - db
+    ports:
+      - "8080:80"
+    volumes:
+      - nop_data:/app/App_Data
 
 volumes:
-  sql_data:
+  db_data:
+  nop_data:
 ```
-
-And in a separate terminal:
 
 ```bash
-ngrok http 5000
+docker-compose down -v
+docker-compose up -d
 ```
 
----
-
-## 💬 Conclusion
-
-What started as a simple Docker experiment turned into a crash course in container persistence, service orchestration, and secure tunneling. If you're just starting out with Docker and databases, don't be discouraged by the bumps — they’re part of the process. Solve them one at a time, and you’ll build something far more stable and scalable in the end.
+![Docker Volumes](sandbox:/mnt/data/volumes.png)
+*Docker Volumes: Showing persisted data volumes*
 
 ---
 
-## 📌 P.S. Coming Soon…
+### 🔁 Step 5: Validation – Test Data Persistence
 
-In a future post, I’ll show how I set up **Jenkins** for CI/CD to automate builds and deployments using this exact stack. Stay tuned!
+```bash
+docker-compose down
+docker-compose up -d
+```
+
+![nopCommerce Product Admin](sandbox:/mnt/data/adminPanel.png)
+*Admin Panel: nopCommerce dashboard with saved product data*
+
+![SQL Server Logs](sandbox:/mnt/data/logs.png)
+*SQL Logs: Database service starting and loading nopCommerce DB*
+
+---
+
+## 🖥️ Step 6: Add Portainer UI
+
+Add this to `docker-compose.yml`:
+
+```yaml
+  portainer:
+    image: portainer/portainer-ce
+    container_name: portainer
+    restart: always
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+volumes:
+  db_data:
+  nop_data:
+  portainer_data:
+```
+
+![Portainer UI](sandbox:/mnt/data/portainerUI.png)
+*Portainer Dashboard: Showing running containers*
+
+---
+
+## 🧪 Frontend Store Test
+
+![nopCommerce UI](sandbox:/mnt/data/UI.png)
+*Frontend Store UI: nopCommerce storefront running on Docker*
+
+---
+
+## 🧠 Key Troubleshooting Steps
+
+| Issue | Fix |
+|-------|-----|
+| Data lost after restart | Add Docker volumes |
+| Installation screen repeats | Persist `/app/App_Data` |
+| No UI on Linux | Use Portainer |
+| SQL fails to connect | Use strong SA password |
+| App can’t reach DB | Wait or use health check |
+
+---
+
+## 🏁 Conclusion
+
+I now have a stable nopCommerce setup that survives reboots and can be managed via UI.
+
+---
