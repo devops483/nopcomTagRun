@@ -1,28 +1,36 @@
 
-# Deploying nopCommerce Using Docker Compose on Linux: Step-by-Step with Data Persistence and Portainer
-
-**By Z | Published: July 3, 2025**
-
----
-
-## 🧭 Overview
-
-In this guide, I walk through how I deployed **nopCommerce** using **Docker Compose** on a **Linux environment**, solved critical **data persistence** issues, and integrated **Portainer** for container management — without Docker Desktop.
+# 🚀 Deploying nopCommerce with Docker Compose on Linux  
+**By Z | July 3, 2025**
 
 ---
 
-## 🎯 Project Goal
+## 1. Introduction: Why Containerize nopCommerce?
 
-- Use **Docker Compose** to set up nopCommerce and SQL Server containers
-- Ensure **user data is retained** after container restarts or system reboots
-- Bypass the nopCommerce installation screen on every restart
-- Manage containers with a UI using **Portainer** (Docker Desktop isn’t supported on Linux)
+Deploying nopCommerce with Docker Compose brings reliability, portability, and streamlined workflows. But without careful setup, common issues like data loss and container management can undermine the benefits. This blog walks through:
+
+- Initial setup with Docker Compose  
+- Troubleshooting data persistence issues  
+- Adding Portainer UI for container management  
+- End-to-end validation and best practices
 
 ---
 
-## 🧱 Step-by-Step Setup
+## 2. Overview of the Deployment Architecture
 
-### ✅ Step 1: Initial Docker Compose File
+Your architecture includes:
+
+1. **nopCommerce app container** – serves the .NET storefront  
+2. **SQL Server container** – the backend database  
+3. **Portainer container** – web-based Docker manager on Linux  
+4. **Docker volumes** – persistent storage for both app and DB  
+5. **Docker network** – seamless communication among containers  
+6. **Docker Compose** – orchestrating and managing services
+
+---
+
+## 3. Step-by-Step Guide
+
+### ✅ 3.1 Step 1 – Create Basic `docker-compose.yml`
 
 ```yaml
 version: '3.4'
@@ -48,14 +56,14 @@ services:
 docker-compose up
 ```
 
-![Installation Screen](sandbox:/mnt/data/Installation.jpg)
+![Installation Screen](images/Installation.jpg)  
 *Initial Installation Screen: Configure store and database*
 
 ---
 
-### ⚠️ Step 2: First Critical Issue – Data Lost on Restart
+### ⚠️ 3.2 Problem – Data Disappears on Restart
 
-After adding test users, I restarted the containers.
+After adding test users, I restarted the containers:
 
 ```bash
 docker-compose down
@@ -66,34 +74,23 @@ docker-compose up
 
 ---
 
-### 🔍 Step 3: Root Cause – No Volume = No Persistence
+### 🔍 3.3 Root Cause – No Volume = No Persistence
 
-By default, containers don't retain changes unless volumes are used.
+By default, containers don't retain changes unless volumes are used. To ensure data persistence, we must bind critical directories using named Docker volumes.
 
 ---
 
-### 💾 Step 4: Solution – Add Docker Volumes
+### 💾 3.4 Step 3 – Add Docker Volumes for Persistence
+
+Update Compose:
 
 ```yaml
-version: '3.4'
-
 services:
   db:
-    image: mcr.microsoft.com/mssql/server:2019-latest
-    environment:
-      SA_PASSWORD: "YourStrong!Passw0rd"
-      ACCEPT_EULA: "Y"
-    ports:
-      - "1433:1433"
     volumes:
       - db_data:/var/opt/mssql
 
   nopcommerce:
-    image: nopcommerceteam/nopcommerce:latest
-    depends_on:
-      - db
-    ports:
-      - "8080:80"
     volumes:
       - nop_data:/app/App_Data
 
@@ -102,34 +99,39 @@ volumes:
   nop_data:
 ```
 
+Run:
+
 ```bash
 docker-compose down -v
 docker-compose up -d
 ```
 
-![Docker Volumes](sandbox:/mnt/data/volumes.png)
+![Docker Volumes](images/volumes.png)  
 *Docker Volumes: Showing persisted data volumes*
 
 ---
 
-### 🔁 Step 5: Validation – Test Data Persistence
+### 🔁 3.5 Step 4 – Validate Persistence
 
 ```bash
-docker-compose down
-docker-compose up -d
+docker-compose down && docker-compose up -d
 ```
 
-![nopCommerce Product Admin](sandbox:/mnt/data/adminPanel.png)
+Check admin panel to confirm your data persisted:
+
+![nopCommerce Product Admin](images/adminPanel.png)  
 *Admin Panel: nopCommerce dashboard with saved product data*
 
-![SQL Server Logs](sandbox:/mnt/data/logs.png)
+![SQL Server Logs](images/logs.png)  
 *SQL Logs: Database service starting and loading nopCommerce DB*
 
 ---
 
-## 🖥️ Step 6: Add Portainer UI
+## 4. Add Portainer UI for Docker Management
 
-Add this to `docker-compose.yml`:
+Since Docker Desktop doesn't work on Linux, Portainer fills that gap.
+
+Add to your `docker-compose.yml`:
 
 ```yaml
   portainer:
@@ -148,32 +150,67 @@ volumes:
   portainer_data:
 ```
 
-![Portainer UI](sandbox:/mnt/data/portainerUI.png)
+Run:
+
+```bash
+docker-compose up -d
+```
+
+Visit: `http://localhost:9000` to finish Portainer setup.
+
+![Portainer UI](images/portainerUI.png)  
 *Portainer Dashboard: Showing running containers*
 
 ---
 
-## 🧪 Frontend Store Test
+## 5. Frontend Store Test
 
-![nopCommerce UI](sandbox:/mnt/data/UI.png)
+Visit `http://localhost:8080` and verify the storefront loads:
+
+![nopCommerce UI](images/UI.png)  
 *Frontend Store UI: nopCommerce storefront running on Docker*
 
 ---
 
-## 🧠 Key Troubleshooting Steps
+## 6. Summary of Docker Workflow
 
-| Issue | Fix |
-|-------|-----|
-| Data lost after restart | Add Docker volumes |
-| Installation screen repeats | Persist `/app/App_Data` |
-| No UI on Linux | Use Portainer |
-| SQL fails to connect | Use strong SA password |
-| App can’t reach DB | Wait or use health check |
+| Task                          | Command                           |
+|-------------------------------|------------------------------------|
+| Start services                | `docker-compose up -d`            |
+| Stop services                 | `docker-compose down`             |
+| Wipe containers + volumes     | `docker-compose down -v`          |
+| Explore volumes               | `docker volume ls`                |
+| Access Portainer              | `http://localhost:9000`           |
+| Access nopCommerce storefront | `http://localhost:8080`           |
+
+---
+
+## 7. Troubleshooting Tips
+
+| Issue                        | Fix                                  |
+|-----------------------------|---------------------------------------|
+| Data lost after restart     | Use Docker volumes                    |
+| Installation screen repeats | Persist `/app/App_Data`              |
+| SQL fails to connect        | Check port 1433 and password strength |
+| App can't reach DB          | Delay start or add health check       |
+| No UI on Linux              | Use Portainer instead of Docker Desktop |
 
 ---
 
-## 🏁 Conclusion
+## 8. Best Practices & Next Steps
 
-I now have a stable nopCommerce setup that survives reboots and can be managed via UI.
+- Use `.env` file to manage secrets and configs  
+- Automate backups for Docker volumes  
+- Add health checks for DB and app readiness  
+- Extend this setup for production or CI/CD workflows
 
 ---
+
+## 9. Conclusion
+
+With Docker Compose, named volumes, and Portainer UI, you now have a stable nopCommerce development environment on Linux. It’s persistent, visual, and entirely platform-independent.
+
+Happy containerizing! 🐳🛍️
+
+---
+
