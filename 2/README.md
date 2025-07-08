@@ -1,4 +1,4 @@
-Setting Up nopCommerce on IIS with Multi-Store, SSL, and Domain Configuration
+# Setting Up nopCommerce on IIS with Multi-Store, SSL, and Domain Configuration
 
 ## Introduction
 
