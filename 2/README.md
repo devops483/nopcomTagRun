@@ -23,6 +23,8 @@ This guide is perfect for developers or businesses looking to simulate a multi-t
 
 ## 2. Setting up nopCommerce on IIS
 
+> 💡 **Troubleshooting Tip:** If you encounter an `HTTP Error 500.19` at this point, it's likely due to missing IIS modules or configuration issues. Make sure the **IIS URL Rewrite Module** is installed and that required **Windows features** (such as ASP.NET and .NET Extensibility) are enabled. Restart your server after enabling them.
+
 1. Open IIS Manager.
 2. Add a new site:
 
@@ -47,6 +49,12 @@ Edit `C:\Windows\System32\drivers\etc\hosts` and add:
 
 ## 4. Creating and Binding a Self-Signed SSL Certificate
 
+> ⚠️ **Common Issue:** Sometimes self-signed certificates are not recognized as trusted by the browser or system. To fix this:
+>
+> * Use PowerShell to create the cert.
+> * Import the certificate into the **Trusted Root Certification Authorities** store.
+> * When binding the certificate in IIS, ensure **SNI** is enabled for each domain.
+
 1. Use PowerShell to create a cert:
 
    ```powershell
@@ -66,17 +74,46 @@ Edit `C:\Windows\System32\drivers\etc\hosts` and add:
 2. Fill out DB and admin details.
 3. Complete the installation.
 
+**📸 Screenshot Placeholder:** `![nopCommerce Admin Panel](path/to/images/admin-panel.png)`
+
+1. Navigate to `https://nopcom.local`
+2. Fill out DB and admin details.
+3. Complete the installation.
+
 ---
 
 ## 6. Creating Multiple Stores
 
+> ⚠️ **Note:** After creating stores, assigning SSL URLs may fail if SSL bindings for the domains are not properly configured in IIS. Double-check your bindings, ensure certificates exist for each store domain, and that each domain is mapped correctly in the `hosts` file.
+
 1. In Admin → Configuration → Stores
 2. Add three stores:
+
+   * `nopcom1.local` (Canada)
+   * `nopcom2.local` (Sweden)
+   * `nopcom3.local` (Japan)
+3. Each store should have a unique URL.
+
+**📸 Screenshot Placeholder:** `![Store List](path/to/images/store-list.png)`
+**📸 Screenshot Placeholder:** `![Canada Store](path/to/images/canada-store.png)`
+**📸 Screenshot Placeholder:** `![Sweden Store](path/to/images/sweden-store.png)`
+**📸 Screenshot Placeholder:** `![Japan Store](path/to/images/japan-store.png)`
+
+> ⚠️ **Note:** After creating stores, assigning SSL URLs may fail if SSL bindings for the domains are not properly configured in IIS. Double-check your bindings, ensure certificates exist for each store domain, and that each domain is mapped correctly in the `hosts` file.
+
+1. In Admin → Configuration → Stores
+
+2. Add three stores:
+
+3. In Admin → Configuration → Stores
+
+4. Add three stores:
 
    * `nopcom1.local`
    * `nopcom2.local`
    * `nopcom3.local`
-3. Each store should have a unique URL.
+
+5. Each store should have a unique URL.
 
 Update hosts file:
 
@@ -90,9 +127,24 @@ Update hosts file:
 
 ## 7. Configuring Multi-Language and Multi-Currency
 
+> 🧠 **Tip:** If store-specific language or currency settings don't appear correctly, it's often due to improper store URL configuration or untrusted SSL. Clear your browser cache and ensure each domain is accessible over HTTPS before assigning it in admin.
+
 1. Admin → Configuration → Language → Add three languages (e.g., English, French, Hindi)
 2. Admin → Configuration → Currency → Add USD, EUR, INR
 3. Optionally assign specific languages and currencies per store.
+
+**📸 Screenshot Placeholder:** `![Languages Setup](path/to/images/languages.png)`
+**📸 Screenshot Placeholder:** `![Currencies Setup](path/to/images/currencies.png)`
+
+> 🧠 **Tip:** If store-specific language or currency settings don't appear correctly, it's often due to improper store URL configuration or untrusted SSL. Clear your browser cache and ensure each domain is accessible over HTTPS before assigning it in admin.
+
+1. Admin → Configuration → Language → Add three languages (e.g., English, French, Hindi)
+
+2. Admin → Configuration → Language → Add three languages (e.g., English, French, Hindi)
+
+3. Admin → Configuration → Currency → Add USD, EUR, INR
+
+4. Optionally assign specific languages and currencies per store.
 
 ---
 
@@ -131,11 +183,75 @@ Assign each certificate in IIS bindings using SNI.
   * Correct store loads
   * Language and currency options appear correctly
 
+**📸 Screenshot Placeholder:** `![Port Bindings in IIS](path/to/images/port-bindings.png)`
+
+* Visit:
+
+  * `https://nopcom1.local`
+  * `https://nopcom2.local`
+  * `https://nopcom3.local`
+* Ensure:
+
+  * HTTPS is active
+  * SSL is enabled in admin panel
+  * Correct store loads
+  * Language and currency options appear correctly
+
 ---
 
 ## 11. Troubleshooting & Errors Faced
 
-*To be filled once you provide the actual error messages.*
+Even in a well-documented platform like nopCommerce, local IIS deployment can throw some curveballs. Here are the real-world errors I faced — and how I tackled them.
+
+### ⚠️ Error 500.19 - Internal Server Error
+
+* **Symptoms:** The application failed to load on IIS, throwing a 500.19 configuration error.
+* **Cause:** Missing IIS modules like URL Rewrite or missing Windows features.
+* **Fix:**
+
+  * Installed **IIS URL Rewrite Module**.
+  * Verified `.NET Core Hosting Bundle` was installed.
+  * Enabled required Windows features (via Windows Features UI).
+  * Rebooted the machine after installation.
+
+### 🔒 Self-Signed SSL Not Working Over HTTPS
+
+* **Symptoms:** After generating self-signed certificates, browsers would block access or show the site as insecure.
+* **Cause:**
+
+  * Certificate not trusted by the system.
+  * Certificate bound incorrectly in IIS.
+  * SNI not enabled.
+* **Fix:**
+
+  * Regenerated certificates with PowerShell.
+  * Ensured each domain's certificate was installed in the **Trusted Root Certification Authorities**.
+  * Enabled **SNI** when binding the cert to the domain in IIS.
+
+### 🌐 Could Not Assign SSL URLs to Stores
+
+* **Symptoms:** After creating stores in nopCommerce Admin, assigning their respective SSL URLs failed.
+* **Cause:**
+
+  * SSL bindings were not properly configured in IIS for each domain.
+  * Missing or untrusted certificates.
+* **Fix:**
+
+  * Verified each domain was mapped in the `hosts` file.
+  * Created individual self-signed certs for each domain.
+  * Properly bound each cert to the store domain using SNI.
+
+### 🧩 Multi-Store Admin Not Reflecting URLs
+
+* **Symptoms:** Store-specific settings (language, currency) weren’t displaying correctly.
+* **Cause:**
+
+  * Store URLs weren’t fully registered or weren’t accessible due to HTTPS issues.
+* **Fix:**
+
+  * Revisited Admin → Configuration → Stores.
+  * Re-mapped each store to its domain and verified bindings.
+  * Cleared browser cache and restarted IIS.
 
 ---
 
@@ -143,4 +259,4 @@ Assign each certificate in IIS bindings using SNI.
 
 With this setup, you’ve successfully configured nopCommerce with multiple stores on a local IIS server, each with its own domain, self-signed SSL certificate, languages, and currencies. This mirrors a real-world enterprise eCommerce solution in a local test environment.
 
-In a production environment, replace self-signed certificates with valid ones and configure DNS records accordingly.
+In a production environment, replace self-signed certificates with valid ones and configure DNS records accordingly. This setup taught me how crucial proper IIS configuration, certificates, and binding are — and how to troubleshoot them effectively.
