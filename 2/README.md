@@ -73,12 +73,9 @@ Edit `C:\Windows\System32\drivers\etc\hosts` and add:
 1. Navigate to `https://nopcom.local`
 2. Fill out DB and admin details.
 3. Complete the installation.
+4. Access Admin Login
 
-**📸 Screenshot Placeholder:** ![nopCommerce Admin Panel](images/AdminPanelConfig.png)
-
-1. Navigate to `https://nopcom.local`
-2. Fill out DB and admin details.
-3. Complete the installation.
+![nopCommerce Admin Panel](images/AdminPanelConfig.png)
 
 ---
 
@@ -89,15 +86,15 @@ Edit `C:\Windows\System32\drivers\etc\hosts` and add:
 1. In Admin → Configuration → Stores
 2. Add three stores:
 
-   * `nopcom1.local` (Canada)
+   * `nopcom1.local` (Japan)
    * `nopcom2.local` (Sweden)
-   * `nopcom3.local` (Japan)
+   * `nopcom3.local` (Canada)
 3. Each store should have a unique URL.
 
-**📸 Screenshot Placeholder:** ![Store List](images/Stores.png)
-**📸 Screenshot Placeholder:** ![Canada Store](images/CanadaStore.png)
-**📸 Screenshot Placeholder:** ![Sweden Store](images/SwedishStore.png)
-**📸 Screenshot Placeholder:** ![Japan Store](images/JapaneseStore.png)
+![Store List](images/Stores.png)
+![Canada Store](images/CanadaStore.png)
+![Sweden Store](images/SwedishStore.png)
+![Japan Store](images/JapaneseStore.png)
 
 > ⚠️ **Note:** After creating stores, assigning SSL URLs may fail if SSL bindings for the domains are not properly configured in IIS. Double-check your bindings, ensure certificates exist for each store domain, and that each domain is mapped correctly in the `hosts` file.
 
@@ -133,8 +130,8 @@ Update hosts file:
 2. Admin → Configuration → Currency → Add USD, EUR, INR
 3. Optionally assign specific languages and currencies per store.
 
-**📸 Screenshot Placeholder:** ![Languages Setup](images/Languages.png)
-**📸 Screenshot Placeholder:** ![Currencies Setup](images/Currency.png)
+![Languages Setup](images/Languages.png)
+![Currencies Setup](images/Currency.png)
 
 > 🧠 **Tip:** If store-specific language or currency settings don't appear correctly, it's often due to improper store URL configuration or untrusted SSL. Clear your browser cache and ensure each domain is accessible over HTTPS before assigning it in admin.
 
@@ -183,7 +180,7 @@ Assign each certificate in IIS bindings using SNI.
   * Correct store loads
   * Language and currency options appear correctly
 
-**📸 Screenshot Placeholder:** `![Port Bindings in IIS](images/PortBinding.png)
+![Port Bindings in IIS](images/PortBinding.png)
 
 * Visit:
 
